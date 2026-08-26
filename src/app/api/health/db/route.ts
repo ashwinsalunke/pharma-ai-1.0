@@ -1,23 +1,33 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { NextResponse } from "next/server"
 
-export const dynamic = "force-dynamic";
+import { createClient } from "@/lib/supabase/server"
+
+export const dynamic = "force-dynamic"
 
 export async function GET() {
-  if (!process.env.DATABASE_URL) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return NextResponse.json(
-      { connected: false, error: "DATABASE_URL is not configured" },
+      { connected: false, error: "NEXT_PUBLIC_SUPABASE_URL is not configured" },
       { status: 503 },
-    );
+    )
   }
 
   try {
-    await db.query("SELECT 1");
-    return NextResponse.json({ connected: true });
+    const supabase = await createClient()
+    const { error } = await supabase.from("drugs").select("id").limit(1)
+
+    if (error) {
+      return NextResponse.json(
+        { connected: false, error: error.message },
+        { status: 503 },
+      )
+    }
+
+    return NextResponse.json({ connected: true })
   } catch {
     return NextResponse.json(
       { connected: false, error: "Database connection failed" },
       { status: 503 },
-    );
+    )
   }
 }
